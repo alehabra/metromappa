@@ -1,0 +1,709 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, user-scalable=no" />
+        <link rel="stylesheet" href="css/main.css">
+		<link rel="stylesheet" href="css/hamburger.css">
+		<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+		<link rel="stylesheet" href="css/normalize.min.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="js/jquery.js"></script>
+		<script src="js/interact.min.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>		
+        <script src="js/vendor/modernizr-2.8.3.min.js"></script>
+    </head>
+    <body data-backdrop="false" ontouchstart="">
+	<div id="metromappa" class="container-fluid nopadding" v-if="modello.lineaGialla">
+		<div id="general-loader" v-if="isLoading">
+			<img src="img/Rolling.gif"/>
+		</div>
+		<!--entrata-->
+		<div id="welcoma2" v-if="entrata">
+		    <h3 style="margin:50px 0px;">BENVENUTO</h3>
+		    <p>Scopri la nuova metropolitana
+				dei servizi di Confcommercio oppure
+				prosegui la tua navigazione sul sito Ascom
+			</p>
+			<div class="col-lg-12 col-xs-12" style="margin-top:30px;">
+				<div class="col-lg-3 col-lg-offset-3 col-xs-6">
+					<h5>INNOVATION MAP</h5>
+					<img style="width:40px; cursor: pointer;"src="img/start.svg" @click="entrata = !entrata"/>
+				</div> 
+				<div class="col-lg-3 col-xs-6">
+					<h5>SITO ASCOM</h5>
+					<a href="http://www.confcommercio.net/">
+						<img style="width:40px; cursor: pointer;" src="img/start.svg"/>
+					</a>
+				</div>
+			</div> 			   
+		</div>
+
+		<header id="header">
+			<div class="container-fluid">
+				<div class="col-lg-2 col-sm-2 col-xs-6">
+					<div class="logo pull-left">
+						<img src="img/Ascom-logo.svg"/>
+					</div>
+					<button class="hamburger hamburger--collapse" 
+					v-on:click="attivaMenu" 
+					v-bind:class="{'is-active': hamburgerActive}" 
+					data-toggle="collapse" 
+					data-target="#macroservizi" 
+					type="button">
+					  <span class="hamburger-box">
+						<span class="hamburger-inner"></span>
+					  </span>
+					</button>
+				</div>
+				<div class="col-lg-6 col-sm-6">
+					<h3 class="blu blu nomargin pull-right onlydesktop">INNOVATION MAP ALTO PIEMONTE</h3>
+				</div>
+				<div class="col-lg-4 col-sm-4 col-xs-6">
+					<div class="pull-right">
+						<div class="cerca"
+							data-toggle="collapse"
+							data-target="#cerca"
+						></div>
+						<div class="mappa"
+						v-on:click="mostraMappa"
+						>
+						</div>
+						<div class="relative" style="display:inline-block;">
+							<div class="percorso"
+							v-on:click="mostraPercorso"
+							data-toggle="collapse"
+							data-target="#ilPercorso"
+							>
+							</div>
+							<template v-if="il_tuo_percorso">
+								<div class="percorso-quanto">
+									{{il_tuo_percorso.length}}
+								</div>
+							</template>
+						</div>	
+					</div>
+				</div>				
+			</div>
+		</header>
+		
+		<!--lista servizi generali-->
+		<template v-if="modello">
+			<template v-if="isDesktop == false">
+				<div id="macroservizi" class="col-lg-12 col-xs-12 collapse">
+					<lista-servizi-blu :servizi="modello" v-on:centramappa="mappaCenter($event)"></lista-servizi-blu>
+					<lista-servizi-verde :servizi="modello" v-on:centramappa="mappaCenter($event)"></lista-servizi-verde>
+					<lista-servizi-gialla :servizi="modello" v-on:centramappa="mappaCenter($event)"></lista-servizi-gialla>
+					<lista-servizi-arancione :servizi="modello" v-on:centramappa="mappaCenter($event)"></lista-servizi-arancione>
+					<lista-servizi-viola :servizi="modello" v-on:centramappa="mappaCenter($event)"></lista-servizi-viola>
+					<div class="container">
+						<a style="color:grey !important;" href="http://www.econ-lab.eu/web/" target="_blank">© EconLab Research Network S.r.l. - All rights reserved</a>
+					</div>					
+				</div>
+			</template>
+			<div id="ilPercorso" class="col-lg-12 col-xs-12 collapse">
+				<lista-percorso :selezionati="il_tuo_percorso"
+								v-on:removeall="pathlengthTozero()"
+								v-on:vediservizi="mostraPercorso2"
+								v-on:rimuoviprezzo="priceremove($event)"
+								v-on:rimuoviprezzoparent="priceparentremove($event)"
+								v-on:mandapreventivo="postaTutto($event)"
+								></lista-percorso>
+			</div>
+			<div id="cerca" class="col-lg-12 col-xs-12 collapse">
+				<transition name="slide-fade">
+					<cerca v-on:mappareturn="mostraMappa" v-on:centramappa="mappaCenter($event)"></cerca>
+				</transition>
+			</div>
+			<div id="referente" class="col-lg-4 col-xs-12 collapse">
+				<transition name="slide-fade">
+					<template v-if="servizi_selezionati.length > 0">
+						<reference :perservizio="servizi_selezionati" v-on:hideref="hidereferemte"></reference>
+					</template>
+				</transition>
+			</div>
+			<template v-if="isDesktop == true">
+				<div id="listaDesktop">
+					<lista-servizi-blu 
+					:servizi="modello" 
+					:extdesktop="servizi_selezionati_desktop[0].lineaApparte" 
+					v-on:centramappa="mappaCenter($event)" 
+					v-on:linebigger="inebigger($event)"
+					v-on:cambiacolore="evidenziaLineaDiversa($event)" 
+					>
+					</lista-servizi-blu>
+					<lista-servizi-verde 
+					:servizi="modello"
+					:extdesktop="servizi_selezionati_desktop[0].lineaApparte"  
+					v-on:centramappa="mappaCenter($event)" 
+					v-on:linebigger="inebigger($event)"
+					v-on:cambiacolore="evidenziaLineaDiversa($event)"
+					>
+					</lista-servizi-verde>
+					<lista-servizi-gialla 
+					:servizi="modello"
+					:extdesktop="servizi_selezionati_desktop[0].lineaApparte" 
+					v-on:centramappa="mappaCenter($event)" 
+					v-on:linebigger="inebigger($event)"
+					v-on:cambiacolore="evidenziaLineaDiversa($event)"
+					>
+					</lista-servizi-gialla>
+					<lista-servizi-arancione 
+					:servizi="modello" 
+					v-on:centramappa="mappaCenter($event)"
+					:extdesktop="servizi_selezionati_desktop[0].lineaApparte" 
+					v-on:linebigger="inebigger($event)"
+					v-on:cambiacolore="evidenziaLineaDiversa($event)"
+					>
+					</lista-servizi-arancione>
+					<lista-servizi-viola 
+					:servizi="modello" 
+					v-on:centramappa="mappaCenter($event)" 
+					:extdesktop="servizi_selezionati_desktop[0].lineaApparte"
+					v-on:linebigger="inebigger($event)"
+					v-on:cambiacolore="evidenziaLineaDiversa($event)"
+					>	
+					</lista-servizi-viola>				
+					<!--desktoplist :toshow="servizi_selezionati_desktop" v-on:linebigger="inebigger($event)"></desktoplist-->
+					<div class="container credit">
+						<a style="color: grey !important;" href="http://www.econ-lab.eu/web/" target="_blank">© EconLab Research Network S.r.l. - All rights reserved</a>
+					</div>					
+				</div>
+			</template>
+		</template>
+
+		<!-- TUTTE LE LINEE -->
+		<div class="container-canvas" v-if="listagialla">
+			<!--benvenuto modal-->
+			<transition v-if="welcome" name="slide-welc">
+			<div id="welcoma">
+			    <h3 style="margin-top:0px;">ISTRUZIONI</h3>
+			    <p>Viaggia e costruisci il tuo futuro
+					con la metropolitana dei servizi
+					di Confcommercio.<br/><br/>
+					Ogni linea rappresenta
+					un collegamento specifico (un tema)
+					ed ogni stazione è un servizio pensato
+					per le diverse esigenze della tua azienda.
+					Clicca sulle estremità delle linee e sulle stazioni
+					per maggiori informazioni.<br/>
+				</p>
+				<h5>INIZIA ORA</h5>
+				<img style="width:40px; cursor: pointer;"src="img/start.svg" @click="welcome = !welcome"/>    
+			</div>
+			</transition>
+			<!--benvenuto modal-->
+			<div id="map-container" class="draggable">
+				<!--estremi linee-->
+				<template v-if="isDesktop == false">
+					<div class="estremoblu" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremoblu2" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremoverde" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremoverde2" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremogiallo" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremogiallo2" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremoarancione" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremoarancione2" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremoviola" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+					<div class="estremoviola2" v-on:click="attivaMenu" data-toggle="collapse" data-target="#macroservizi" ></div>
+				</template>
+				<template v-if="isDesktop == true">
+					<div class="estremoblu" v-on:click="attivaMenuDesk('blu')"></div>
+					<div class="estremoblu2" v-on:click="attivaMenuDesk('blu')"></div>
+					<div class="estremoverde" v-on:click="attivaMenuDesk('verde')"></div>
+					<div class="estremoverde2" v-on:click="attivaMenuDesk('verde')"></div>
+					<div class="estremogiallo" v-on:click="attivaMenuDesk('gialla')"></div>
+					<div class="estremogiallo2" v-on:click="attivaMenuDesk('gialla')"></div>
+					<div class="estremoarancione" v-on:click="attivaMenuDesk('arancione')"></div>
+					<div class="estremoarancione2" v-on:click="attivaMenuDesk('arancione')"></div>
+					<div class="estremoviola" v-on:click="attivaMenuDesk('viola')"></div>
+					<div class="estremoviola2" v-on:click="attivaMenuDesk('viola')"></div>
+				</template>						
+				<!--estremi linee-->
+			
+				<div id="input-container">
+					<!-- evidenziare 
+				    <div v-for="servizio in modello.lineaGialla.servizi" style="position: absolute;" v-bind:style="{left:servizio.x+'px',top:servizio.y+'px'}">
+				    	<img src="img/ripple.svg"/>
+				    </div -->	
+					<!--GIALLA-->
+					<template v-if="evidenziare.gialla[0] && this.isDesktop==true">
+					    <div v-for="evidenziato in evidenziare.gialla" style="position: absolute;" v-bind:style="{left:evidenziato.x+'px',top:evidenziato.y+'px'}">
+					    	<img src="img/ripple.svg"/>
+					    </div>
+				    </template>										
+					<div id="ylwLine" class="custom-checkbox" v-for="(servizio,index) in modello.lineaGialla.servizi" v-bind:style="{left:servizio.x+'px',top:servizio.y+'px'}">
+						<input 
+						type="radio"
+						v-bind:id="['gialla-'+index]"
+						name="serviziGialla" 
+						v-bind:value="servizio.nomeServizio"
+						v-model="giallaPicked"
+						v-on:click="AddServizi(servizio.selected,servizio.classe,servizio.nomeServizio,servizio.descrizione,servizio.descrizione_lunga,index,servizio.x,servizio.y)"/>
+						<label onclick=""
+						v-bind:for="['gialla-'+index]"
+						><span></span>
+						</label>
+					</div>
+					<!-- BLU -->
+					<template v-if="evidenziare.blu[0] && this.isDesktop==true">
+					    <div v-for="evidenziato in evidenziare.blu" style="position: absolute;" v-bind:style="{left:evidenziato.x+'px',top:evidenziato.y+'px'}">
+					    	<img src="img/ripple.svg"/>
+					    </div>
+				    </template>						
+					<div id="bluLine" class="custom-checkbox"
+						v-for="(servizio,index) in modello.lineaBlu.servizi" 
+						v-bind:style="{left:servizio.x+'px',top:servizio.y+'px'}">
+						<input 
+						type="radio" 
+						v-bind:id="['blu-'+index]"
+						name="serviziBlu" 
+						v-bind:value="servizio.nomeServizio"
+						v-model="bluPicked"
+						v-on:click="AddServizi(servizio.selected,servizio.classe,servizio.nomeServizio,servizio.descrizione,servizio.descrizione_lunga,index,servizio.x,servizio.y)"/>
+						<label onclick=""
+						v-bind:for="['blu-'+index]"
+						><span></span>
+						</label>
+					</div>
+
+					<!-- VERDE -->
+					<template v-if="evidenziare.verde[0] && this.isDesktop==true">
+					    <div v-for="evidenziato in evidenziare.verde" style="position: absolute;" v-bind:style="{left:evidenziato.x+'px',top:evidenziato.y+'px'}">
+					    	<img src="img/ripple.svg"/>
+					    </div>
+				    </template>						
+					<div id="verdeLine" class="custom-checkbox"
+						v-for="(servizio,index) in modello.lineaVerde.servizi" 
+						v-bind:style="{left:servizio.x+'px',top:servizio.y+'px'}">
+						<input 
+						type="radio" 
+						v-bind:id="['verde-'+index]"
+						name="serviziVerde" 
+						v-bind:value="servizio.nomeServizio"
+						v-model="verdePicked"
+						v-on:click="AddServizi(servizio.selected,servizio.classe,servizio.nomeServizio,servizio.descrizione,servizio.descrizione_lunga,index,servizio.x,servizio.y)"/>
+						<label onclick=""
+						v-bind:for="['verde-'+index]"
+						><span></span>
+						</label>
+					</div>
+
+					<!-- ARANCIONE -->
+					<template v-if="evidenziare.arancione[0] && this.isDesktop==true">
+					    <div v-for="evidenziato in evidenziare.arancione" style="position: absolute;" v-bind:style="{left:evidenziato.x+'px',top:evidenziato.y+'px'}">
+					    	<img src="img/ripple.svg"/>
+					    </div>
+				    </template>						
+					<div id="arancioneLine" class="custom-checkbox"
+						v-for="(servizio,index) in modello.lineaArancione.servizi" 
+						v-bind:style="{left:servizio.x+'px',top:servizio.y+'px'}">
+						<input 
+						type="radio" 
+						v-bind:id="['arancione-'+index]"
+						name="serviziArancione" 
+						v-bind:value="servizio.nomeServizio"
+						v-model="arancionePicked"
+						v-on:click="AddServizi(servizio.selected,servizio.classe,servizio.nomeServizio,servizio.descrizione,servizio.descrizione_lunga,index,servizio.x,servizio.y)"/>
+						<label onclick=""
+						v-bind:for="['arancione-'+index]"
+						><span></span>
+						</label>
+					</div>
+
+					<!-- VIOLA -->
+					<template v-if="evidenziare.viola[0] && this.isDesktop==true">
+					    <div v-for="evidenziato in evidenziare.viola" style="position: absolute;" v-bind:style="{left:evidenziato.x+'px',top:evidenziato.y+'px'}">
+					    	<img src="img/ripple.svg"/>
+					    </div>
+				    </template>						
+					<div id="violaLine" class="custom-checkbox"
+						v-for="(servizio,index) in modello.lineaViola.servizi" 
+						v-bind:style="{left:servizio.x+'px',top:servizio.y+'px'}">
+						<input 
+						type="radio" 
+						v-bind:id="['viola-'+index]"
+						name="serviziViola" 
+						v-bind:value="servizio.nomeServizio"
+						v-model="violaPicked"
+						v-on:click="AddServizi(servizio.selected,servizio.classe,servizio.nomeServizio,servizio.descrizione,servizio.descrizione_lunga,index,servizio.x,servizio.y)"/>
+						<label onclick=""
+						v-bind:for="['viola-'+index]"
+						><span></span>
+						</label>
+					</div>															
+
+				</div>
+
+				<div id="line-container">
+					<svg style="position: absolute;" version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+						 viewBox="0 0 700 700" style="enable-background:new 0 0 700 700;" xml:space="preserve">
+					<path id="stGialla" d="M350,45.3c0,63.6,0,112.9,0,176.5c0,12.4-4.9,24.2-13.7,33c-46.6,46.6-93.2,93.2-139.8,139.8
+					c-18.3,18.3-18.3,48.1,0,66.4c69.3,69.3,124.4,124.4,193.7,193.7"/>					
+					<path id="stArancione" d="M103.6,103.6l353.3,353.3c8.8,8.8,20.6,13.7,33,13.7h150.7"/>
+					<path id="stBlu" d="M81.3,291.6c14.4-66.3,52.8-124.9,107.9-164.6c28.5-20.5,60.6-35.4,94.7-43.9c31.2-7.7,63.5-9.9,95.5-6.5
+						c67.5,7.3,129.8,39.1,175.2,89.6C600,216.8,625,282.1,625,350s-25,133.2-70.4,183.8s-107.8,82.4-175.3,89.7
+						c-32,3.4-64.3,1.2-95.5-6.6c-34.1-8.5-66.2-23.4-94.6-43.9c-55-39.7-93.3-98.3-107.8-164.5"/>
+					<path id="stVerde" d="M640.5,199.5L383.2,456.8c-18.3,18.3-48.1,18.3-66.4,0L169.2,309.2c-8.8-8.8-13.7-20.6-13.7-33V83.5"/>
+					<path id="stViola" d="M83.5,155.6h363.7c18.9,0,36,11.4,43.2,28.9c7.2,17.5,3.2,37.6-10.1,50.9L125.6,590"/>
+					</svg>				
+					<img src="svg/gialla.svg">
+					<img src="svg/blu.svg">
+					<img src="svg/verde.svg">
+					<img src="svg/arancione.svg">
+					<img src="svg/viola.svg">
+				</div>	
+
+				<div id="estremiContainer">
+					<img src="img/blu1.svg" style="left:70px; top:287px;" alt=""/>
+					<img src="img/blu2.svg" style="left:70px; top:389px;" alt=""/>
+					<img src="img/verde1.svg" style="left:144px; top:64px;" alt=""/>
+					<img src="img/verde2.svg" style="left:632px; top:184px;" alt=""/>
+					<img src="img/giallo1.svg" style="left:338px; top:26px;" alt=""/>
+					<img src="img/giallo2.svg" style="left:382px; top:647px;" alt=""/>
+					<img src="img/arancio1.svg" style="left:88px; top:88px;" alt=""/>
+					<img src="img/arancio2.svg" style="left:636px; top:459px;" alt=""/>
+					<img src="img/viola1.svg" style="left:64px; top:144px;" alt=""/>
+					<img src="img/viola2.svg" style="left:110px; top:582px;" alt=""/>
+				</div>
+				<a href="http://www.hubstartup4.it/sign-in.html/3" target="_blank">
+				<div id="hub" v-on:click="poston()" v-bind:class="{'huboff': hubactive, 'hubon': !hubactive}"></div>
+				</a>
+			</div>
+		</div>
+		<!-- TUTTE LE LINEE -->
+		<!-- SELEZIONE SERVIZI IN FONDO -->
+        <template v-if="servizi_selezionati.length>0">
+            <transition name="slide-fade">
+            <div id="ui-button-selected" v-bind:class="{ altezzamassima : BottomGiallaDesc }" class="col-lg-12 col-xs-12">
+                <div class="relative">
+                    <!--MENU-->
+                    <div id="ui-may-add">
+                        <div class="chiama" data-toggle="collapse" data-target="#referente"></div>                    
+                    </div>
+                    
+                    <div class="row line-blu-separator">
+                        <div class="col-lg-8 col-xs-11">
+                            <span class="blu" style="padding-bottom:12px; display: inline-block; width:100%;">{{servizi_selezionati[0].servizio}}</span><br/>
+ 
+                            <p class="grigio">{{servizi_selezionati[0].descrizione}}</p><br/>
+                        </div>
+						<div class="col-lg-4 col-sm-12 col-xs-1">
+						<template v-if="isDesktop==false">
+							<span class="pull-right nomargin" v-on:click="mostraDescLungaGiallo" v-bind:class="[BottomGiallaDesc ? 'minus' : !BottomGiallaDesc,'plus']" data-toggle="collapse" data-target="#sottoSelezionati"></span>
+						</template>	
+						</div>
+						<template v-if="isDesktop==true">
+						<div class="col-lg-12" style="margin-bottom:15px;">
+								<span class="pull-left nomargin" v-on:click="mostraDescLungaGiallo" v-bind:class="[BottomGiallaDesc ? 'minus' : !BottomGiallaDesc,'plus']" data-toggle="collapse" data-target="#sottoSelezionati"></span>	
+						</div>
+						</template>
+
+                        <!--SOTTOSERVIZI-->
+                        <div id="sottoSelezionati" class="collapse col-lg-12 col-xs-12 nopadding">
+                            <div class="col-lg-8 col-xs-11">
+                                <p class="grigio">                              
+                                    {{servizi_selezionati[0].descrizione_lunga}}
+                                    <br/><br/> Il servizio comprende diverse voci; seleziona quelle interessanti per la tua azienda e aggiungile al tuo percorso per richiedere un preventivo.<br/><br/> 
+                                </p>  
+                            </div>
+                            <!--LINEA GIALLA-->
+                            <div v-if="servizi_selezionati[0].lineaApparte=='gialla'">
+                                <div class="col-lg-12 col-xs-12">
+                                    <span style="margin: 3px 0px;width: 100%;display: inline-block;float: left;" 
+                                    v-for="(Sottoservizio,index) in modello.lineaGialla.servizi[servizi_selezionati[0].index].sottoservizio">
+                                    <input 
+                                    type="checkbox" 
+                                    name="sottoserGialla" 
+                v-bind:value="{sotnome:Sottoservizio.nome,sotprezzo:Sottoservizio.prezzo,sotaltri:Sottoservizio.altriprezzi}"
+                                    v-model="sottoTemp"/>   
+                                        {{Sottoservizio.nome}}<br/>
+                                        <div v-if="Sottoservizio.prezzo>0" class="partireda grigio">
+                                            Prezzo a partire da {{Sottoservizio.prezzo}}€ <span v-if="Sottoservizio.altriprezzi">{{Sottoservizio.altriprezzi}}</span><br/><br/>
+                                        </div>    
+                                        <div v-if="Sottoservizio.prezzo==0" class="partireda grigio">
+                                            Gratuito
+                                        </div>                                            
+                                    </span>
+                                </div>
+                                <!--{{sottoTemp}}-->
+                                <!--DESCRIZIONE GENERALE GIALLA-->
+                                <div class="col-lg-12 col-xs-12 line-blu-separator gialla" style="border-bottom:0px; margin-bottom: 50px">
+                                    <h5>Linea 3</h5>
+                                    <p>{{modello.lineaGialla.descrizione}}</p>
+                                </div>    
+                            </div>
+                            <!--LINEA BLU-->  
+                            <div v-if="servizi_selezionati[0].lineaApparte=='blu'">
+                                <div class="col-lg-12 col-xs-12">
+                                    <span style="margin: 3px 0px;width: 100%;display: inline-block;float: left;"  
+                                    v-for="(Sottoservizio,index) in modello.lineaBlu.servizi[servizi_selezionati[0].index].sottoservizio">
+                                    <input 
+                                    type="checkbox" 
+                                    name="sottoserBlu" 
+                v-bind:value="{sotnome:Sottoservizio.nome,sotprezzo:Sottoservizio.prezzo,sotaltri:Sottoservizio.altriprezzi}"
+                                    v-model="sottoTemp"
+                                    />   
+                                    {{Sottoservizio.nome}}  <br/>
+                                    <div class="partireda" style="height: 3px;">
+                          			<span style="visibility: hidden;">Prezzo a partire da {{Sottoservizio.prezzo}}€ +<br/><br/></span>
+                                        </div>                                        
+                                    </span>
+                                </div>
+                                <!--DESCRIZIONE GENERALE BLU-->
+                                <div class="col-lg-12 col-xs-12 line-blu-separator blue" style="border-bottom:0px; margin-bottom: 50px">
+                                    <h5>Linea 1</h5>
+                                    <p>{{modello.lineaBlu.descrizione}}</p>
+                                </div>    
+                            </div>
+                            <!--LINEA VERDE-->    
+                            <div v-if="servizi_selezionati[0].lineaApparte=='verde'">
+                                <div class="col-lg-12 col-xs-12">
+                                    <span style="margin: 3px 0px;width: 100%;display: inline-block;float: left;"  
+                                    v-for="(Sottoservizio,index) in modello.lineaVerde.servizi[servizi_selezionati[0].index].sottoservizio">
+                                    <input 
+                                    type="checkbox" 
+                                    name="sottoserVerde" 
+                v-bind:value="{sotnome:Sottoservizio.nome,sotprezzo:Sottoservizio.prezzo,sotaltri:Sottoservizio.altriprezzi}"
+                                    v-model="sottoTemp"
+                                    />   
+                                    {{Sottoservizio.nome}}  <br/>
+                                        <div v-if="Sottoservizio.prezzo>0" class="partireda grigio">
+                                            Prezzo a partire da {{Sottoservizio.prezzo}}€ <span v-if="Sottoservizio.altriprezzi">{{Sottoservizio.altriprezzi}}</span><br/><br/>
+                                        </div>    
+                                        <div v-if="Sottoservizio.prezzo==0" class="partireda grigio">
+                                            Gratuito
+                                        </div>                                       
+                                    </span>
+                                </div>
+                                <!--DESCRIZIONE GENERALE VERDE-->
+                                <div class="col-lg-12 col-xs-12 line-blu-separator verde" style="border-bottom:0px; margin-bottom: 50px">
+                                    <h5>Linea 2</h5>
+                                    <p>{{modello.lineaVerde.descrizione}}</p>
+                                </div>    
+                            </div>
+                            <!--LINEA ARANCIONE-->    
+                            <div v-if="servizi_selezionati[0].lineaApparte=='arancione'">
+                                <div class="col-lg-12 col-xs-12">
+                                    <span style="margin: 3px 0px;width: 100%;display: inline-block;float: left;" 
+                                    v-for="(Sottoservizio,index) in modello.lineaArancione.servizi[servizi_selezionati[0].index].sottoservizio">
+                                    <input 
+                                    type="checkbox" 
+                                    name="sottoserArancione" 
+                v-bind:value="{sotnome:Sottoservizio.nome,sotprezzo:Sottoservizio.prezzo,sotaltri:Sottoservizio.altriprezzi}"
+                                    v-model="sottoTemp"
+                                    />   
+                                    {{Sottoservizio.nome}}  <br/>
+                                        <div v-if="Sottoservizio.prezzo>0" class="partireda grigio">
+                                            Prezzo a partire da {{Sottoservizio.prezzo}}€ <span v-if="Sottoservizio.altriprezzi">{{Sottoservizio.altriprezzi}}</span><br/><br/>
+                                        </div>    
+                                        <div v-if="Sottoservizio.prezzo==0" class="partireda grigio">
+                                            Gratuito
+                                        </div>                                      
+                                    </span>
+                                </div>
+                                <!--DESCRIZIONE GENERALE ARANCIONE-->
+                                <div class="col-lg-12 col-xs-12 line-blu-separator arancione" style="border-bottom:0px; margin-bottom: 50px">
+                                    <h5>Linea 4</h5>
+                                    <p>{{modello.lineaArancione.descrizione}}</p>
+                                </div>    
+                            </div>                            
+                            <!--LINEA VIOLA-->    
+                            <div v-if="servizi_selezionati[0].lineaApparte=='viola'">
+                                <div class="col-lg-12 col-xs-12">
+                                    <span style="margin: 3px 0px;width: 100%;display: inline-block;float: left;" 
+                                    v-for="(Sottoservizio,index) in modello.lineaViola.servizi[servizi_selezionati[0].index].sottoservizio">
+                                    <input 
+                                    type="checkbox" 
+                                    name="sottoserViola" 
+                v-bind:value="{sotnome:Sottoservizio.nome,sotprezzo:Sottoservizio.prezzo,sotaltri:Sottoservizio.altriprezzi}"
+                                    v-model="sottoTemp"
+                                    />   
+                                    {{Sottoservizio.nome}}  <br/>
+                                        <div v-if="Sottoservizio.prezzo>0" class="partireda grigio">
+                                            Prezzo a partire da {{Sottoservizio.prezzo}}€ <span v-if="Sottoservizio.altriprezzi">{{Sottoservizio.altriprezzi}}</span><br/><br/>
+                                        </div>    
+                                        <div v-if="Sottoservizio.prezzo==0" class="partireda grigio">
+                                            Gratuito
+                                        </div>                                       
+                                    </span>
+                                </div>
+                                <!--DESCRIZIONE GENERALE VIOLA-->
+                                <div class="col-lg-12 col-xs-12 line-blu-separator viola" style="border-bottom:0px; margin-bottom: 50px">
+                                    <h5>Linea 5</h5>
+                                    <p>{{modello.lineaArancione.descrizione}}</p>
+                                </div>    
+                            </div>
+
+                            <div class="col-lg-12 col-xs-12">
+		                        <div v-if="sottoTemp.length>0" class="aggiungi" v-on:click="AggiungiaPercorso"></div>
+		                        <div v-if="sottoTemp.length<1" class="aggiungi-disabled"></div>
+	                        </div>
+
+                        </div>
+                    </div>
+                </div>    
+            </div>
+            </transition> 
+        </template>
+
+
+
+					<!--MODALI PRIVACY -->
+		<div id="informativa" class="modal fade" role="dialog">
+		  <div class="modal-dialog" style="margin-top:10%;">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+				<h4 class="modal-title">Trattamento dati personali</h4>
+			  </div>
+			  <div class="modal-body">
+				<p>
+					Ti informiamo che i dati che fornirai al gestore del presente
+					sito al momento della tua compilazione del "form contatti" (o form o form mail) disponibile
+					sul sito stesso, saranno trattati nel rispetto delle disposizioni di cui al d.lgs. 196/2003,
+					Codice in materia di protezione dei dati personali.
+
+					Il form contatti messo a disposizione sul
+					sito ha il solo scopo di consentire ai visitatori del sito di contattare, qualora lo desiderino, il
+					gestore del sito stesso, inviando tramite il suddetto form una email al gestore.
+
+					La presente
+
+					informativa riguarda i dati personali inviati dall'utente visitatore al momento della
+					compilazione del form contatti.
+
+					Ti informiamo del fatto che i dati che conferirai
+
+					volontariamente tramite il form verranno tramutati in una email che eventualmente potrà
+					essere conservata all'interno del sistema di ricezione di email utilizzato dal titolare del
+					sito.
+					Questi dati non verranno registrati su altri supporti o dispositivi, nè verranno registrati
+					altri dati derivanti dalla tua navigazione sul sito.
+				</p>
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Chiudi</button>
+			  </div>
+			</div>
+		  </div>
+		</div>
+
+		<div id="message">
+			<h3 class="info-message">Trattamento Dati Personali</h3>
+			<p class="text-message">
+					Ti informiamo che i dati che fornirai al gestore del presente
+					sito al momento della tua compilazione del "form contatti" (o form o form mail) disponibile
+					sul sito stesso, saranno trattati nel rispetto delle disposizioni di cui al d.lgs. 196/2003,
+					Codice in materia di protezione dei dati personali.
+
+					Il form contatti messo a disposizione sul
+					sito ha il solo scopo di consentire ai visitatori del sito di contattare, qualora lo desiderino, il
+					gestore del sito stesso, inviando tramite il suddetto form una email al gestore.
+
+					La presente
+
+					informativa riguarda i dati personali inviati dall'utente visitatore al momento della
+					compilazione del form contatti.
+
+					Ti informiamo del fatto che i dati che conferirai
+
+					volontariamente tramite il form verranno tramutati in una email che eventualmente potrà
+					essere conservata all'interno del sistema di ricezione di email utilizzato dal titolare del
+					sito.
+					Questi dati non verranno registrati su altri supporti o dispositivi, nè verranno registrati
+					altri dati derivanti dalla tua navigazione sul sito.				
+
+			</p>
+			<div class="chiudi" v-on:click="chiudimessage">CHIUDI X</div>
+		</div>
+		<div id="grazie" style="display:none;">
+			<h3 class="info-grazie"></h3>
+			<p class="text-grazie">
+			</p>
+			<div class="chiudi" v-on:click="chiudigrazie">CHIUDI X</div>
+		</div>		
+
+
+		<div id="marketing" class="modal fade" role="dialog">
+		  <div class="modal-dialog" style="margin-top:10%;">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+				<h4 class="modal-title">Attività marketing</h4>
+			  </div>
+			  <div class="modal-body">
+				<p>Lorem ipsum dolor sit amet</p>
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Chiudi</button>
+			  </div>
+			</div>
+		  </div>
+		</div>
+		
+		<div id="profilazione" class="modal fade" role="dialog">
+		  <div class="modal-dialog" style="margin-top:10%;">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal">&times;</button>
+				<h4 class="modal-title">Attività di profilazione</h4>
+			  </div>
+			  <div class="modal-body">
+				<p>Lorem ipsum dolor sit amet</p>
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">Chiudi</button>
+			  </div>
+			</div>
+		  </div>
+		</div>
+
+		<!-- Modal -->
+		<div id="myModal" class="modal fade" role="dialog">
+		  <div class="modal-dialog">
+		    <!-- Modal content-->
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal">&times;</button>
+		        <h4 class="modal-title">Modal Header</h4>
+		      </div>
+		      <div class="modal-body">
+		        <p id="modaltext">Some text in the modal.</p>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default" data-dismiss="modal">Chiudi</button>
+		      </div>
+		    </div>
+
+		  </div>
+		</div>
+
+		<div id="endmodal" class="modal fade" role="dialog">
+		  <div class="modal-dialog">
+		    <!-- Modal content-->
+		    <div class="modal-content">
+		      <div class="modal-header">
+		        <button type="button" class="close" data-dismiss="modal">&times;</button>
+		        <h4 class="modal-title">Modal Header</h4>
+		      </div>
+		      <div class="modal-body">
+		        <p id="endmodaltext">Some text in the modal.</p>
+		      </div>
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-default" data-dismiss="modal" v-on:click="reload" v-on:click="">Chiudi</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>			
+	</div>
+	<script src="js/vue.js"></script>
+	<script src="js/componente-giallo.js"></script>
+	<script src="js/selezionati.js"></script>			
+	<script src="js/main.js"></script>
+    </body>
+</html>
